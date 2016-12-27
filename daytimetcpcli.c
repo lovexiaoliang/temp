@@ -38,7 +38,42 @@ str_cli(FILE *fp, int sockfd)
                 }
         }
 }
+int sendfile(int sockfd,FILE*p)  //return 1 if success or zero if fail
+{
+	int n=0;
+	int length=0;
+	char bufftmp[MAXLINE];
+	char filename[MAXLINE+1];
+	if(Fgets(filename,MAXLINE,p)==NULL)
+		return 0;
+	if((n=Writen(sockfd,filename,strlen(filename)))<0)// send the file name to the server
+	{
+		printf("connection error\n");
+		return 0;
+	}
+	FILE *fp = fopen(filename,"r");
+	if(fp==NULL)
+	{
+		printf("File:%s Not Found\n", filename);
+		return 0;
+	}
+	bzero(bufftmp,MAXLINE);
+	while(length=fread(bufftmp,sizeof(char),MAXLINE)>0)
+	{
+		if(send(sockfd,bufftmp,length,0)<0)
+		{
+			printf("Send File %s failed\n",filename);
+		}
+		bzero(bufftmp,MAXLINE);
 
+	}
+	fclose(fp);
+	printf("File:%s Transfer Successful!\n", filename);
+	
+	return 1;
+
+
+}
 
 
 
@@ -89,6 +124,10 @@ main(int argc, char **argv)
 		if(sendline[0]=='1')
 		{
 			str_cli(stdin,stdout)
+		}
+		if(sendline[0]=='2')
+		{
+
 		}
 		else
 		{

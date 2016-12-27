@@ -36,15 +36,40 @@ void sig_chld(int signo)
 }
 void detailsrv(int id,int sockfd)
 {
+     int n=0;
+     int length=0;
+     char filename[MAXLINE+1];
+     char bufftmp[MAXLINE];
      switch(id)
      {
-             case 1:
-                     str_echo(connfd);
-                     break;
-             case 2:
-                     break;
-             case 3:
-                     break;
+        case 1:
+                str_echo(sockfd);
+                break;
+        case 2:
+
+                break;
+        case 3:
+                if((n=read(sockfd,filename,MAXLINE))>0)
+                {
+                        filename[n]=0;
+                        FiLE *fp = fopen(filename,w);
+                        if(fp==NULL)
+                        {
+                                printf("File:\t%s can not open to write\n",filename);
+                                exit(1);
+                        }
+                }
+                bzero(bufftmp,MAXLINE);
+                while((length=recv(sockfd,bufftmp,MAXLINE,0))>0)
+                {
+                        if(fwrite(buffer, sizeof(char), length, fp) < length)
+                        {
+                                printf("File:\t%s write failed\n",filename);
+                                break;
+                        }
+                        bzero(bufftmp,MAXLINE);
+                }
+                break;
 
      }
 }
@@ -101,7 +126,7 @@ again:
                                                 switch(temp)
                                                 {
                                                         case 'a':
-                                                            printf("KangZewei connection from %s, port %d\n",Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port)
+                                                            printf("KangZewei connection from %s, port %d\n",Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port));
                                                                 ticks = time(NULL);
                                                                 snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
                                                                 Writen(connfd, buff, strlen(buff));
@@ -135,7 +160,7 @@ again:
                                                                 {
                                                                         revline[n]=0;
                                                                         temp=revline[0];
-                                                                        detailsrv(temp-'0');
+                                                                        detailsrv(temp-'0',connfd);
                                                                         break;
                                                                 }
                                                                 break;

@@ -62,97 +62,101 @@ main(int argc, char **argv)
 	servaddr.sin_port        = htons(13);	/* daytime server */
 
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
-
+	Signal(SIGCHLD,sig_chld);
 	Listen(listenfd, LISTENQ);
 
 	for ( ; ; ) {
-		len = sizeof(cliaddr);
-		if((connfd = Accept(listenfd, (SA *) &cliaddr, &len))<0)
+		len = sizeof(cliaddr)
+		if(clinum<3)
 		{
-			if(errno==EINTR)
+			clinum++;
+			if((connfd = Accept(listenfd, (SA *) &cliaddr, &len))<0)
 			{
-				continue;
+				if(errno==EINTR)
+				{
+					continue;
+				}
+				else
+					err_sys("Accept error");
 			}
-			else
-				err_sys("Accept error");
-		}
-		clinum++;
-		if(clinum>3)
-		{
-			snprintf(buff,sizeof(buff),"cli too much connect denied\r\n");
-			Writen(connfd,buff,strlen(buff));
+			if ((childpid=Fork())==0)
+		    {
+		    	/* code */
+		    	Close(listenfd);
+		    	Writen(connfd,exp,strlen(exp));
+			    while(strcmp(revline,"exit")!=0)   //while(1)
+				{
+				   // printf("n=%d\n",n);
+					if((n=read(connfd,revline,MAXLINE))>0)
+					{
+						revline[n]=0;
+						char temp = revline[0];
+						switch(temp)
+						{
+							case 'a':
+							    printf("KangZewei connection from %s, port %d\n",Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port));
+								ticks = time(NULL);
+								snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
+								Writen(connfd, buff, strlen(buff));
+								break;
+							case 'b':
+								temp=revline[1];
+								int cli_order = temp-'0';
+								int ser_order = bigorlittle();
+								char *sendline;
+								if (cli_order==ser_order)
+								{
+									if (cli_order==1)
+										sendline="host byte order is same, little\n";
+									else
+										sendline="host byte order is same, Big\n";
+
+								}
+								else
+								{
+									if(cli_order==1)
+										sendline="host byte order is differ, cli little,ser big\n";
+									else
+										sendline="host byte order is differ, cli big.ser little\n";
+								}
+								Writen(connfd,sendline,strlen(sendline));
+								break;
+							case 'c':
+								snprintf(buff,sizeof(buff),"Input 1 2 3...5 for detail\r\n");
+								Writen(connfd,buff,strlen(buff));
+								while(n=read(connfd,revline,MAXLINE)>0)
+								{
+									revline[n]=0;
+									temp=revline[0];
+									detailsrv(temp-'0');
+									break;
+								}
+								break;
+							default:
+								printf("reput\n");
+								break;
+						}
+					}
+				}
+				exit(0);
+			}
 			Close(connfd);
-			clinum--;
+		}
+		else
+		{
+			Writen(connfd,"cli too much connect denied",strlen("cli too much connect denied"));
+			Close(connfd);
 			continue;
 		}
+		
 
 	 	// printf("KangZewei connection from %s, port %d\n",Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)),ntohs(cliaddr.sin_port));
 	   // while(strcmp(revline,"exit")!=0)
 	   
-	    if ((childpid=Fork())==0)
-	    {
-	    	/* code */
-	    	Close(listenfd);
-	    	Writen(connfd,exp,strlen(exp));
-		    while(strcmp(revline,"exit")!=0)   //while(1)
-			{
-			   // printf("n=%d\n",n);
-				if((n=read(connfd,revline,MAXLINE))>0)
-				{
-					revline[n]=0;
-					char temp = revline[0];
-					switch(temp)
-					{
-						case 'a':
-						    printf("KangZewei connection from %s, port %d\n",Inet_ntop(AF_INET, &cliaddr.sin_addr, buff, sizeof(buff)), ntohs(cliaddr.sin_port));
-							ticks = time(NULL);
-							snprintf(buff, sizeof(buff), "%.24s\r\n", ctime(&ticks));
-							Writen(connfd, buff, strlen(buff));
-							break;
-						case 'b':
-							temp=revline[1];
-							int cli_order = temp-'0';
-							int ser_order = bigorlittle();
-							char *sendline;
-							if (cli_order==ser_order)
-							{
-								if (cli_order==1)
-									sendline="host byte order is same, little\n";
-								else
-									sendline="host byte order is same, Big\n";
-
-							}
-							else
-							{
-								if(cli_order==1)
-									sendline="host byte order is differ, cli little,ser big\n";
-								else
-									sendline="host byte order is differ, cli big.ser little\n";
-							}
-							Writen(connfd,sendline,strlen(sendline));
-							break;
-						case 'c':
-							snprintf(buff,sizeof(buff),"Input 1 2 3...5 for detail\r\n");
-							Writen(connfd,buff,strlen(buff));
-							while(n=read(connfd,revline,MAXLINE)>0)
-							{
-								revline[n]=0;
-								temp=revline[0];
-								detailsrv(temp-'0');
-								break;
-							}
-							break;
-						default:
-							printf("reput\n");
-							break;
-					}
-				}
-			}
-			exit(0);
-
-
-		}
+	    
 		
-		Close(connfd);
+		
 	}
 }
+
+

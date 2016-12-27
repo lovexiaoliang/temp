@@ -42,6 +42,8 @@ str_cli(FILE *fp, int sockfd)
 
 
 
+int hostbyteorder(char sendline[]);
+
 int
 main(int argc, char **argv)
 {
@@ -88,7 +90,7 @@ main(int argc, char **argv)
 		Writen(sockfd,sendline,strlen(sendline));
 		if(sendline[0]=='1')
 		{
-			str_cli(stdin,stdout)
+			str_cli(stdin,sockfd);
 		}
 		else
 		{
